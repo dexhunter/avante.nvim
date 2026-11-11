@@ -1,0 +1,34 @@
+[
+  {
+    "upstream_repo": "avante-corp/avante.nvim",
+    "head_sha": "0a4f93f779d3e9726904aded429719880b2612c9",
+    "file": "lua/avante/utils/tokens.lua",
+    "function": "Tokens.calculate_tokens",
+    "native_test_cmd": "DEPS_PATH=\"${DEPS_PATH:-target/tests/deps}\" AVANTE_RUNTIME_TEST_DIR=\"${AVANTE_RUNTIME_TEST_DIR:-target/tests}\" ./scripts/run-luatest.sh tests/sidebar_route_spec.lua",
+    "bench_cmd": "nvim --headless -u NONE -i NONE -l osspr-intake/harness/tokens_alloc.lua",
+    "metric_kind": "allocations",
+    "baseline_value": 128745504,
+    "baseline_noise_pct": 0.0,
+    "metric_benchmark": "nvim --headless -u NONE -i NONE -l osspr-intake/harness/tokens_alloc.lua",
+    "labeled_data": null,
+    "tests_pass_on_baseline": true,
+    "workload": "One user message whose content list is a short caption plus 16 KiB of whitespace-free base64 image data, the shape calculate_tokens already special-cases.",
+    "notes": "With the native tokenizer absent, calculate_tokens appends image source.data onto the caption and then does current_token = current_token .. char for every byte. GC stopped, that 16 KiB blob retains 128745504 Lua heap bytes (about n^2/2); a whitespace scan that never builds the token would stay near a few KiB and still return 7. baseline_noise_pct is (max-min)/median*100 over 5 process runs after one warmup call; all five printed 128745504. tests/sidebar_route_spec.lua sets enable_token_counting and calls Sidebar:get_generate_prompts_options, which calls Llm.calculate_tokens and therefore Tokens.calculate_tokens. Overlap: no author:dexhunter PRs on avante-corp/avante.nvim; no open PR and no PR merged since 2026-10-12 touches lua/avante/utils/tokens.lua (GitHub commits for that path since 2026-10-01 are empty). Open #3293 edits utils/init.lua and prompt templates, not this counter. Issue #3207 is about prompt token spend, not a rewrite of this function."
+  },
+  {
+    "upstream_repo": "avante-corp/avante.nvim",
+    "head_sha": "0a4f93f779d3e9726904aded429719880b2612c9",
+    "file": "crates/avante-html2md/src/lib.rs",
+    "function": "do_html2md",
+    "native_test_cmd": "cargo test --release --no-default-features --features=luajit -p avante-html2md",
+    "bench_cmd": "cargo run --quiet --release --manifest-path osspr-intake/harness/html2md_peak/Cargo.toml",
+    "metric_kind": "peak_memory_bytes",
+    "baseline_value": 513748,
+    "baseline_noise_pct": 0.0,
+    "metric_benchmark": "cargo run --quiet --release --manifest-path osspr-intake/harness/html2md_peak/Cargo.toml",
+    "labeled_data": null,
+    "tests_pass_on_baseline": true,
+    "workload": "One fetched-page HTML document: a short article plus a 500 KiB inline script, a stylesheet, a header, and a footer.",
+    "notes": "do_html2md builds a new HtmlToMarkdown and html5ever parses script, style, header, and footer even though skip_tags drops them from the markdown. Peak live bytes during the call are 513748, tracking that unused script. Removing those blocks before convert keeps the markdown exactly '# Title\\n\\nHello **world**.' on this page, so the peak can fall to the article-sized tree. baseline_noise_pct is (max-min)/median*100 over 5 process runs after one warmup; all five printed 513748. cargo test -p avante-html2md runs test_fetch_md, which calls do_fetch_md and therefore do_html2md (it does not assert the markdown). Overlap: no dexhunter PRs; no open PR and no PR merged since 2026-10-12 touches crates/avante-html2md/src/lib.rs. Merged #3373 only bumps crates/avante-html2md/Cargo.toml via the nix flake. No open issue says this converter is being replaced."
+  }
+]
